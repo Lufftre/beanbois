@@ -6,7 +6,7 @@ PROJECT_NAME          ?= Beans
 PROJECT_VERSION       ?= 1.0
 PROJECT_BUILD_PATH    ?= .
 
-RAYLIB_PATH           ?= /Users/ludde/Library/raylib
+RAYLIB_PATH           ?= /home/ludde/gamedev/raylib
 RAYLIB_RELEASE_PATH   ?= $(RAYLIB_PATH)/src
 RAYLIB_LIBTYPE        ?= STATIC
 
@@ -22,7 +22,7 @@ BUILD_WEB_HEAP_SIZE   ?= 134217728
 # BUILD_WEB_RESOURCES_PATH  ?= resources
 
 # Emscripten required variables
-EMSDK_PATH         ?= /Users/ludde/Library/emsdk
+EMSDK_PATH         ?= /home/ludde/gamedev/emsdk
 EMSCRIPTEN_PATH    ?= $(EMSDK_PATH)/upstream/emscripten
 CLANG_PATH          = $(EMSDK_PATH)/upstream/bin
 PYTHON_PATH         = /usr/bin/python3
@@ -116,7 +116,7 @@ build/%.o: %.c
 	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
 
 server:
-	gcc -I /usr/local/include/wsserver -L /usr/local/lib/ -l ws server.c -o build/server.out
+	gcc -I /usr/local/include/ -L /usr/local/lib64/ server.c -l ws  -o build/server.out
 
 # Clean everything
 clean:

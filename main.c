@@ -16,10 +16,12 @@ EM_BOOL onmessage(int eventType, const EmscriptenWebSocketMessageEvent *websocke
 #define SERVER_URL "ws://localhost:8100"
 EMSCRIPTEN_WEBSOCKET_T ws;
 unsigned short readyState;
+char* peers[10];
 
 int screenWidth;
 int screenHeight;
 int isFullscreen;
+
 
 GameState state = ENTRY;
 
@@ -38,6 +40,12 @@ Rectangle textBox;
 char name[MAX_INPUT_CHARS + 1] = "\0";
 int letterCount = 0;
 const int textBoxWidth = 500;
+
+// LOBBY
+Rectangle buttonStartRec;
+const char buttonStartText[] = "Start";
+const int buttonStartFontSize = 30;
+ButtonState buttonStartState;
 
 int main(void)
 {
@@ -58,11 +66,19 @@ int main(void)
     textBox.width = textBoxWidth;
     textBox.height = 50;
 
+    // LOBBY
+    int buttonStartTextWidth = MeasureText(buttonStartText, buttonStartFontSize);
+    buttonStartRec.x = 500;
+    buttonStartRec.y = 500;
+    buttonStartRec.width = buttonStartTextWidth + 20;
+    buttonStartRec.height = buttonStartFontSize + 10;
+
     emscripten_set_main_loop(UpdateScreen, 60, 1);
     CloseWindow();
     return 0;
 }
 
+Message message;
 void UpdateScreen(void)
 {
     Vector2 mousePos = GetMousePosition();
@@ -117,6 +133,23 @@ void UpdateScreen(void)
     else if (state == LOBBY)
     {
         emscripten_websocket_get_ready_state(ws, &readyState);
+        if (CheckCollisionPointRec(mousePos, buttonStartRec))
+        {
+            if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+                buttonStartState = DEPRESSED;
+            else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+            {
+                buttonStartState = CLICKED;
+                message.op = START_GAME;
+                emscripten_websocket_send_binary(ws, &message, sizeof(Message));
+
+                // state = STARTED;
+            }
+            else
+                buttonStartState = HOVER;
+        }
+        else
+            buttonStartState = DEFAULT;
     }
 
     BeginDrawing();
@@ -142,10 +175,30 @@ void UpdateScreen(void)
         ClearBackground(BLACK);
         if (readyState == 1)
         {
+            int ipeer = 0;
+            for (size_t i = 0; i < 10; i++)
+            {
+                if(peers[i] != NULL)
+                {
+                    DrawText(peers[i], 150, 150 + ipeer*40, 30, RAYWHITE);
+                    ipeer++;
+                }
+            }
+            
             char text[] = "Connected";
             int ft = 30;
             int w = MeasureText(text, ft);
             DrawText(text, screenWidth - w - 150, screenHeight - ft - 150, ft, RAYWHITE);
+
+            Color c;
+            if (buttonStartState == HOVER)
+                c = LIGHTGRAY;
+            else if (buttonStartState >= DEPRESSED)
+                c = DARKGRAY;
+            else
+                c = GRAY;
+            DrawRectangleRec(buttonStartRec, c);
+            DrawText(buttonStartText, buttonStartRec.x + 10, buttonStartRec.y + 5, buttonStartFontSize, WHITE);
         }
         else
         {
@@ -155,16 +208,20 @@ void UpdateScreen(void)
             DrawText(text, screenWidth - w - 150, screenHeight - ft - 150, ft, RAYWHITE);
         }
     }
+    else if (state == STARTED)
+    {
+        ClearBackground(RAYWHITE);
+    }
     EndDrawing();
 }
 
+JoinMessage joinMessage;
 EM_BOOL onopen(int eventType, const EmscriptenWebSocketOpenEvent *websocketEvent, void *userData)
 {
     puts("onopen");
-    Message *m = malloc(sizeof(Message));
-    m->op = 0;
-    strcpy(m->name, name);
-    emscripten_websocket_send_binary(ws, m, sizeof(Message));
+    joinMessage.op = JOIN;
+    strcpy(joinMessage.name, name);
+    emscripten_websocket_send_binary(ws, &joinMessage, sizeof(JoinMessage));
     return EM_TRUE;
 }
 
@@ -184,5 +241,46 @@ EM_BOOL onmessage(int eventType, const EmscriptenWebSocketMessageEvent *websocke
 {
     puts("onmessage");
     printf("%s", websocketEvent->data);
+
+    Message *msg = (Message *)websocketEvent->data;
+    printf("message op: %d\n", msg->op);
+    if (msg->op == PLAYER_JOIN)
+    {
+        JoinMessage *msg =  (JoinMessage *)websocketEvent->data;
+        // JoinMessage *joinmsg = malloc(sizeof(JoinMessage));
+        char* joiningPlayer = malloc(sizeof(msg->name));
+        strcpy(joiningPlayer, msg->name);
+        printf("Player %s has joined\n", joiningPlayer);
+        for (int i = 0; i < 10; i++)
+        {
+            printf("peers %d %s\n", i, peers[i]);
+            if(peers[i] == NULL)
+            {
+                printf("adding %s\n", joiningPlayer);
+                peers[i] = joiningPlayer;
+                break;
+            }
+        }
+        
+    }
+    else if (msg->op == PLAYER_LEFT)
+    {
+        JoinMessage *msg =  (JoinMessage *)websocketEvent->data;
+        printf("Player %s has left\n", msg->name);
+        for (size_t i = 0; i < 10; i++)
+        {
+            if(strcmp(peers[i], msg->name) == 0)
+            {
+                free(peers[i]);
+                peers[i] = NULL;
+                break;
+            }
+        }
+    }
+    else if (msg->op == START_GAME)
+    {
+        state = STARTED;
+    }
+
     return EM_TRUE;
 }
