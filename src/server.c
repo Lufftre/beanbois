@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <ws.h>
+#include "ws.h"
 #include "main.h"
 
 ws_cli_conn_t *clients[5];
@@ -49,11 +49,14 @@ void onmessage(ws_cli_conn_t *client,
 
 int main(void)
 {
-    struct ws_events evs;
-    evs.onopen    = &onopen;
-    evs.onclose   = &onclose;
-    evs.onmessage = &onmessage;
-
-    ws_socket(&evs, 8100, 0, 1000);
+	ws_socket(&(struct ws_server){
+		.host = "0.0.0.0",
+		.port = 8100,
+		.thread_loop   = 0,
+		.timeout_ms    = 1000,
+		.evs.onopen    = &onopen,
+		.evs.onclose   = &onclose,
+		.evs.onmessage = &onmessage
+	});
     return (0);
 }

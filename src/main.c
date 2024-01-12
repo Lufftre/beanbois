@@ -17,8 +17,8 @@ EM_BOOL onmessage(int eventType, const EmscriptenWebSocketMessageEvent *websocke
 EMSCRIPTEN_WEBSOCKET_T ws;
 unsigned short readyState;
 
-int screenWidth;
-int screenHeight;
+int canvasWidth = 1000;
+int canvasHeight = 1000;
 int isFullscreen;
 
 GameState state = ENTRY;
@@ -41,16 +41,17 @@ const int textBoxWidth = 500;
 
 int main(void)
 {
-    emscripten_get_screen_size(&screenWidth, &screenHeight);
-    screenHeight -= 130;
-    screenWidth /= 2.0f;
-    InitWindow(screenWidth, screenHeight, "Beans");
+    // emscripten_get_canvas_element_size("#canvas", &canvasWidth, &canvasHeight);
+    // canvasHeight -= 130;
+    // canvasWidth /= 2.0f;
+    // SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    InitWindow(canvasWidth, canvasHeight, "Beans");
 
     // ENTRY
     ENTRY_TEXTWIDTH = MeasureText(ENTRY_TEXT, ENTRY_FONTSIZE);
     int buttonJoinTextWidth = MeasureText(buttonJoinText, buttonJoinFontSize);
-    buttonJoinRec.x = (screenWidth - buttonJoinTextWidth + textBoxWidth) / 2;
-    buttonJoinRec.y = screenHeight / 3 + ENTRY_FONTSIZE + 20;
+    buttonJoinRec.x = (canvasWidth - buttonJoinTextWidth + textBoxWidth) / 2;
+    buttonJoinRec.y = canvasHeight / 3 + ENTRY_FONTSIZE + 20;
     buttonJoinRec.width = buttonJoinTextWidth + 20;
     buttonJoinRec.height = buttonJoinFontSize + 10;
     textBox.x = buttonJoinRec.x - textBoxWidth - 25;
@@ -63,10 +64,19 @@ int main(void)
     return 0;
 }
 
+void OnWindowResize(void)
+{
+    emscripten_get_canvas_element_size("#canvas", &canvasWidth, &canvasHeight);
+}
 void UpdateScreen(void)
 {
-    Vector2 mousePos = GetMousePosition();
+    if(IsWindowResized())
+    {
+        OnWindowResize();
+    }
 
+    Vector2 mousePos = GetMousePosition();
+    (printf("%f %f\n",mousePos.x, mousePos.y));
     if (state == ENTRY)
     {
 
@@ -122,9 +132,7 @@ void UpdateScreen(void)
     BeginDrawing();
     if (state == ENTRY)
     {
-        ClearBackground(RAYWHITE);
-        DrawText(ENTRY_TEXT, (screenWidth - ENTRY_TEXTWIDTH) / 2, screenHeight / 3, ENTRY_FONTSIZE, BLACK);
-
+        ClearBackground(DARKGRAY);
         DrawRectangleRec(textBox, LIGHTGRAY);
         DrawText(name, (int)textBox.x + 5, (int)textBox.y + 8, 40, MAROON);
         Color c;
@@ -145,14 +153,14 @@ void UpdateScreen(void)
             char text[] = "Connected";
             int ft = 30;
             int w = MeasureText(text, ft);
-            DrawText(text, screenWidth - w - 150, screenHeight - ft - 150, ft, RAYWHITE);
+            DrawText(text, canvasWidth - w - 150, canvasHeight - ft - 150, ft, RAYWHITE);
         }
         else
         {
             char text[] = "Waiting to connect...";
             int ft = 30;
             int w = MeasureText(text, ft);
-            DrawText(text, screenWidth - w - 150, screenHeight - ft - 150, ft, RAYWHITE);
+            DrawText(text, canvasWidth - w - 150, canvasHeight - ft - 150, ft, RAYWHITE);
         }
     }
     EndDrawing();
