@@ -1,27 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <emscripten/emscripten.h>
-#include <emscripten/websocket.h>
 #include "main.h"
 #include "raylib.h"
+#include "scenes.h"
+#include <time.h>
 
 void UpdateScreen(void);
-
-EM_BOOL onopen(int eventType, const EmscriptenWebSocketOpenEvent *websocketEvent, void *userData);
-EM_BOOL onerror(int eventType, const EmscriptenWebSocketErrorEvent *websocketEvent, void *userData);
-EM_BOOL onclose(int eventType, const EmscriptenWebSocketCloseEvent *websocketEvent, void *userData);
-EM_BOOL onmessage(int eventType, const EmscriptenWebSocketMessageEvent *websocketEvent, void *userData);
-
-// WS
-#define SERVER_URL "ws://localhost:8100"
-EMSCRIPTEN_WEBSOCKET_T ws;
-unsigned short readyState;
 
 int canvasWidth = 1000;
 int canvasHeight = 1000;
 int isFullscreen;
 
-GameState state = ENTRY;
+GameState state = LOBBY;
 
 // ENTRY
 const char ENTRY_TEXT[] = "BeanBois";
@@ -38,13 +29,9 @@ Rectangle textBox;
 char name[MAX_INPUT_CHARS + 1] = "\0";
 int letterCount = 0;
 const int textBoxWidth = 500;
-
 int main(void)
 {
-    // emscripten_get_canvas_element_size("#canvas", &canvasWidth, &canvasHeight);
-    // canvasHeight -= 130;
-    // canvasWidth /= 2.0f;
-    // SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    srand(time(NULL));
     InitWindow(canvasWidth, canvasHeight, "Beans");
 
     // ENTRY
@@ -64,19 +51,10 @@ int main(void)
     return 0;
 }
 
-void OnWindowResize(void)
-{
-    emscripten_get_canvas_element_size("#canvas", &canvasWidth, &canvasHeight);
-}
 void UpdateScreen(void)
 {
-    if(IsWindowResized())
-    {
-        OnWindowResize();
-    }
 
     Vector2 mousePos = GetMousePosition();
-    (printf("%f %f\n",mousePos.x, mousePos.y));
     if (state == ENTRY)
     {
 
@@ -105,28 +83,25 @@ void UpdateScreen(void)
         if (CheckCollisionPointRec(mousePos, buttonJoinRec))
         {
             if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+            {
                 buttonJoinState = DEPRESSED;
+            }
             else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
-                EmscriptenWebSocketCreateAttributes ws_attrs = {SERVER_URL, NULL, EM_TRUE};
-                ws = emscripten_websocket_new(&ws_attrs);
-
-                emscripten_websocket_set_onopen_callback(ws, NULL, onopen);
-                emscripten_websocket_set_onerror_callback(ws, NULL, onerror);
-                emscripten_websocket_set_onclose_callback(ws, NULL, onclose);
-                emscripten_websocket_set_onmessage_callback(ws, NULL, onmessage);
                 buttonJoinState = CLICKED;
                 state = LOBBY;
+                printf("state -> LOBBY\n");
             }
             else
+            {
                 buttonJoinState = HOVER;
+            }
         }
         else
             buttonJoinState = DEFAULT;
     }
     else if (state == LOBBY)
     {
-        emscripten_websocket_get_ready_state(ws, &readyState);
     }
 
     BeginDrawing();
@@ -147,50 +122,7 @@ void UpdateScreen(void)
     }
     else if (state == LOBBY)
     {
-        ClearBackground(BLACK);
-        if (readyState == 1)
-        {
-            char text[] = "Connected";
-            int ft = 30;
-            int w = MeasureText(text, ft);
-            DrawText(text, canvasWidth - w - 150, canvasHeight - ft - 150, ft, RAYWHITE);
-        }
-        else
-        {
-            char text[] = "Waiting to connect...";
-            int ft = 30;
-            int w = MeasureText(text, ft);
-            DrawText(text, canvasWidth - w - 150, canvasHeight - ft - 150, ft, RAYWHITE);
-        }
+        DrawBoard();
     }
     EndDrawing();
-}
-
-EM_BOOL onopen(int eventType, const EmscriptenWebSocketOpenEvent *websocketEvent, void *userData)
-{
-    puts("onopen");
-    Message *m = malloc(sizeof(Message));
-    m->op = 0;
-    strcpy(m->name, name);
-    emscripten_websocket_send_binary(ws, m, sizeof(Message));
-    return EM_TRUE;
-}
-
-EM_BOOL onerror(int eventType, const EmscriptenWebSocketErrorEvent *websocketEvent, void *userData)
-{
-    puts("onerror");
-    return EM_TRUE;
-}
-
-EM_BOOL onclose(int eventType, const EmscriptenWebSocketCloseEvent *websocketEvent, void *userData)
-{
-    puts("onclose");
-    return EM_TRUE;
-}
-
-EM_BOOL onmessage(int eventType, const EmscriptenWebSocketMessageEvent *websocketEvent, void *userData)
-{
-    puts("onmessage");
-    printf("%s", websocketEvent->data);
-    return EM_TRUE;
 }

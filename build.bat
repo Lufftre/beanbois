@@ -1,2 +1,14 @@
 @echo off
-emcc -o build/main.html ./src/main.c -O0 -Wall ..\raylib\src\libraylib.a -I ../raylib/src -I ../raylib/src/external -I ../raylib/src/extras -l websocket.js -s USE_GLFW=3 -s GL_ENABLE_GET_PROC_ADDRESS -D PLATFORM_WEB --shell-file ./resc/shell.html
+emcc ^
+    -o build/main.html^
+    ./src/main.c ./src/board.c^
+    -O0 -Wall -std=c99^
+    ..\raylib\src\libraylib.a^
+    -I ../raylib/src^
+    -I ../raylib/src/external^
+    -I ../raylib/src/extras^
+    -s USE_GLFW=3^
+    -s GL_ENABLE_GET_PROC_ADDRESS^
+    -D PLATFORM_WEB^
+    --shell-file ./resc/shell.html
+@REM -l websocket.js^
