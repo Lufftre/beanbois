@@ -1,7 +1,9 @@
 @echo off
 emcc ^
     -o build/main.html^
-    ./src/main.c ./src/board.c^
+    ./src/main.c^
+    ./src/board.c^
+    ./src/lobby.c^
     -O0 -Wall -std=c99^
     ..\raylib\src\libraylib.a^
     -I ../raylib/src^
