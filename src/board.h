@@ -1,3 +1,4 @@
+#include "game.h"
 typedef enum BoardState
 {
     INACTIVE,
@@ -37,6 +38,7 @@ typedef struct Bag
 extern Bag bags[NBOARDS];
 
 void DrawBoard(void);
+void UpdateBoard(GameState* state);
 void DrawShop(void);
 void InitBag(Bag *bag);
 void InitBags(void);

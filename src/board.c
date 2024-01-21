@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "board.h"
-#include "main.h"
 #define NCHIP_COLORS 4
 const Color chipColors[NCHIP_COLORS] = {
     WHITE,
@@ -209,7 +208,7 @@ void DrawBoard(void)
                 if (RoundIsDone())
                 {
                     currentShopper = 0;
-                    state = SHOP;
+                    // state = SHOP;
                 }
             }
         }
@@ -292,7 +291,10 @@ void DrawChip(Chip *chip, int x, int y, int *chipCounter)
         (*chipCounter)++;
     }
 }
+void UpdateBoard(GameState *state)
+{
 
+}
 void DrawShop(void)
 {
     ClearBackground(DARKGRAY);
@@ -306,7 +308,7 @@ void DrawShop(void)
         if (boards[currentShopper].state == INACTIVE)
         {
             ResetBoards();
-            state = BOARD;
+            // state = BOARD;
             return;
         }
     }

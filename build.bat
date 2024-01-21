@@ -2,13 +2,13 @@
 emcc ^
     -o build/main.html^
     ./src/main.c^
-    ./src/board.c^
     ./src/lobby.c^
+    ./src/board.c^
     -O0 -Wall -std=c99^
-    ..\raylib\src\libraylib.a^
-    -I ../raylib/src^
-    -I ../raylib/src/external^
-    -I ../raylib/src/extras^
+    C:/raylib/src/libraylib.a^
+    -I C:/raylib/src^
+    -I C:/raylib/src/external^
+    -I C:/raylib/src/extras^
     -s USE_GLFW=3^
     -s GL_ENABLE_GET_PROC_ADDRESS^
     -D PLATFORM_WEB^
