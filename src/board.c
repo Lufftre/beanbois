@@ -28,14 +28,15 @@ const Color chipColors[NCHIP_COLORS] = {
     // PINK,
 };
 
-typedef enum EChip {
-    WHITE,
+typedef enum EChip
+{
+    EWHITE,
     // ORANGE,
     // GREEN,
-    RED,
-    BLUE,
+    ERED,
+    EBLUE,
     // BLACK,
-    YELLOW,
+    EYELLOW,
     // PINK,
 } EChip;
 
@@ -46,8 +47,6 @@ const int boardSize = chipSize * chipsPerRow + (chipBoarder * (chipsPerRow + 1))
 const int gutter = (1000 - boardSize * 3) / 4;
 const int lineWidth = 4;
 const int boardRectSize = boardSize + lineWidth * 2;
-
-
 
 void shuffle(int *array, size_t n)
 {
@@ -75,15 +74,15 @@ void ShuffleBag(Bag *bag)
 
 void InitBag(Bag *bag)
 {
-    bag->chips[0] = (Chip){1, 4};
-    bag->chips[1] = (Chip){1, 4};
-    bag->chips[2] = (Chip){1, 4};
-    bag->chips[3] = (Chip){1, 4};
-    bag->chips[4] = (Chip){1, 4};
-    bag->chips[5] = (Chip){1, 4};
-    bag->chips[6] = (Chip){1, 4};
-    bag->chips[7] = (Chip){1, 1};
-    bag->chips[8] = (Chip){2, 1};
+    bag->chips[0] = (Chip){EWHITE, 1};
+    bag->chips[1] = (Chip){EWHITE, 1};
+    bag->chips[2] = (Chip){EWHITE, 1};
+    bag->chips[3] = (Chip){EWHITE, 1};
+    bag->chips[4] = (Chip){EWHITE, 2};
+    bag->chips[5] = (Chip){EWHITE, 2};
+    bag->chips[6] = (Chip){EWHITE, 3};
+    bag->chips[7] = (Chip){ERED, 1};
+    bag->chips[8] = (Chip){EBLUE, 1};
     bag->nChips = 9;
 
     ShuffleBag(bag);
@@ -187,13 +186,15 @@ void UpdateBoard(GameState *state)
     for (size_t i = 0; i < NBOARDS; i++)
     {
         Board *b = &boards[i];
-        if(b->state != ACTIVE) continue;
+        if (b->state != ACTIVE)
+            continue;
 
         int x = gutter + (gutter + boardSize) * (i % 3);
         int y = gutter + (gutter + boardSize) * (i / 3);
         b->isHovered = !(mousePos.x < x || mousePos.x > x + boardSize || mousePos.y < y || mousePos.y > y + boardSize);
 
-        if (!b->isHovered) continue;
+        if (!b->isHovered)
+            continue;
 
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
         {
@@ -210,11 +211,9 @@ void UpdateBoard(GameState *state)
     }
 }
 
-
 void DrawBoard(void)
 {
     ClearBackground(BLACK);
-
 
     for (size_t i = 0; i < NBOARDS; i++)
     {

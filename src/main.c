@@ -14,12 +14,14 @@ int canvasWidth = 1000;
 int canvasHeight = 1000;
 int isFullscreen;
 
-GameState state = LOBBY;
+GameState state = BOARD;
 
 int main(void)
 {
     srand(time(NULL));
     InitWindow(canvasWidth, canvasHeight, "Beans");
+    AddPlayer();
+    InitBags();
 
     emscripten_set_main_loop(UpdateScreen, 60, 1);
     CloseWindow();
