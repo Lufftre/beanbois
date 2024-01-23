@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "raylib.h"
 #include "lobby.h"
+#include "board.h"
+
 #define MAX_INPUT_CHARS 15
 #define ENTRY_FONTSIZE 12
 
@@ -29,7 +31,7 @@ void InitLobby(void)
 }
 void DrawLobby(void)
 {
-    ClearBackground(DARKGRAY);
+    ClearBackground(BLACK);
     DrawRectangleRec(inputName.rec, LIGHTGRAY);
     if(inputName.count == 0)
         DrawText("Enter Name", (int)inputName.rec.x + 5, (int)inputName.rec.y + 8, 40, GRAY);
@@ -58,6 +60,8 @@ void UpdateLobby(GameState *state)
         }
         else if (key == KEY_ENTER)
         {
+            AddPlayer();
+            InitBags();
             *state = BOARD;
         }
 

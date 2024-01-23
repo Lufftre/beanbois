@@ -4,6 +4,7 @@ emcc ^
     ./src/main.c^
     ./src/lobby.c^
     ./src/board.c^
+    ./src/shop.c^
     -O0 -Wall -std=c99^
     C:/raylib/src/libraylib.a^
     -I C:/raylib/src^

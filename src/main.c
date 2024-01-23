@@ -6,6 +6,7 @@
 #include "main.h"
 #include "lobby.h"
 #include "board.h"
+#include "shop.h"
 
 void UpdateScreen(void);
 
@@ -19,11 +20,6 @@ int main(void)
 {
     srand(time(NULL));
     InitWindow(canvasWidth, canvasHeight, "Beans");
-
-    // InitLobby();
-    // AddPlayer();
-    // AddPlayer();
-    // InitBags();
 
     emscripten_set_main_loop(UpdateScreen, 60, 1);
     CloseWindow();
@@ -43,9 +39,10 @@ void UpdateScreen(void)
     case BOARD:
         UpdateBoard(&state);
         DrawBoard();
-    // case SHOP:
-    //     UpdateShop();
-    //     DrawShop();
+        break;
+    case SHOP:
+        DrawAndUpdateShop(&state);
+        break;
     default:
         break;
     }

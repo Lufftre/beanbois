@@ -3,17 +3,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "board.h"
-#define NCHIP_COLORS 4
-const Color chipColors[NCHIP_COLORS] = {
-    WHITE,
-    // ORANGE,
-    // GREEN,
-    RED,
-    BLUE,
-    // BLACK,
-    YELLOW,
-    // PINK,
-};
 
 Board boards[NBOARDS] = {
     {0},
@@ -28,7 +17,28 @@ Board boards[NBOARDS] = {
 };
 Bag bags[NBOARDS];
 
-int currentShopper = 0;
+const Color chipColors[NCHIP_COLORS] = {
+    WHITE,
+    // ORANGE,
+    // GREEN,
+    RED,
+    BLUE,
+    // BLACK,
+    YELLOW,
+    // PINK,
+};
+
+typedef enum EChip {
+    WHITE,
+    // ORANGE,
+    // GREEN,
+    RED,
+    BLUE,
+    // BLACK,
+    YELLOW,
+    // PINK,
+} EChip;
+
 const int chipSize = 20;
 const int chipBoarder = 2;
 const int chipsPerRow = 10;
@@ -36,6 +46,8 @@ const int boardSize = chipSize * chipsPerRow + (chipBoarder * (chipsPerRow + 1))
 const int gutter = (1000 - boardSize * 3) / 4;
 const int lineWidth = 4;
 const int boardRectSize = boardSize + lineWidth * 2;
+
+
 
 void shuffle(int *array, size_t n)
 {
@@ -59,32 +71,20 @@ void ShuffleBag(Bag *bag)
         bag->draws[i] = i;
     }
     shuffle(bag->draws, bag->nChips);
-    printf("Shuffled bag ");
-    for (size_t i = 0; i < bag->nChips; i++)
-    {
-        printf("%d ", bag->draws[i]);
-    }
-    printf("\n");
 }
 
 void InitBag(Bag *bag)
 {
-    bag->chips[0] = (Chip){0, 1};
-    bag->chips[1] = (Chip){0, 1};
-    bag->chips[2] = (Chip){0, 1};
-    bag->chips[3] = (Chip){0, 1};
-    bag->chips[4] = (Chip){0, 2};
-    bag->chips[5] = (Chip){0, 2};
-    bag->chips[6] = (Chip){0, 3};
+    bag->chips[0] = (Chip){1, 4};
+    bag->chips[1] = (Chip){1, 4};
+    bag->chips[2] = (Chip){1, 4};
+    bag->chips[3] = (Chip){1, 4};
+    bag->chips[4] = (Chip){1, 4};
+    bag->chips[5] = (Chip){1, 4};
+    bag->chips[6] = (Chip){1, 4};
     bag->chips[7] = (Chip){1, 1};
     bag->chips[8] = (Chip){2, 1};
     bag->nChips = 9;
-    
-    // bag->chips[0] = (Chip){0, 3};
-    // bag->chips[1] = (Chip){1, 3};
-    // bag->chips[2] = (Chip){2, 3};
-    // bag->chips[3] = (Chip){3, 3};
-    // bag->nChips = 4;
 
     ShuffleBag(bag);
 }
@@ -180,38 +180,45 @@ bool RoundIsDone(void)
     return true;
 }
 
-void DrawBoard(void)
+void UpdateBoard(GameState *state)
 {
-    ClearBackground(DARKGRAY);
     Vector2 mousePos = GetMousePosition();
-
-    bool clicked = IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
-    bool rclicked = IsMouseButtonReleased(MOUSE_BUTTON_RIGHT);
 
     for (size_t i = 0; i < NBOARDS; i++)
     {
         Board *b = &boards[i];
+        if(b->state != ACTIVE) continue;
 
         int x = gutter + (gutter + boardSize) * (i % 3);
         int y = gutter + (gutter + boardSize) * (i / 3);
         b->isHovered = !(mousePos.x < x || mousePos.x > x + boardSize || mousePos.y < y || mousePos.y > y + boardSize);
 
-        if (b->state == ACTIVE && b->isHovered)
+        if (!b->isHovered) continue;
+
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
         {
-            if (clicked)
+            AddChip(b, &bags[i]);
+        }
+        else if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+        {
+            LockBoard(b);
+            if (RoundIsDone())
             {
-                AddChip(b, &bags[i]);
-            }
-            else if (rclicked)
-            {
-                LockBoard(b);
-                if (RoundIsDone())
-                {
-                    currentShopper = 0;
-                    // state = SHOP;
-                }
+                *state = SHOP;
             }
         }
+    }
+}
+
+
+void DrawBoard(void)
+{
+    ClearBackground(BLACK);
+
+
+    for (size_t i = 0; i < NBOARDS; i++)
+    {
+        Board *b = &boards[i];
 
         Color c = YELLOW;
         switch (b->state)
@@ -233,34 +240,15 @@ void DrawBoard(void)
             break;
         }
 
+        int x = gutter + (gutter + boardSize) * (i % 3);
+        int y = gutter + (gutter + boardSize) * (i / 3);
         DrawRectangleLinesEx((Rectangle){x, y, boardRectSize, boardRectSize}, lineWidth, c);
+
         int chipCounter = 0;
         for (size_t chip_i = 0; chip_i < b->nChips; chip_i++)
         {
             Chip *chip = &b->chips[chip_i];
-            for (size_t _chip = 0; _chip < chip->value; _chip++)
-            {
-                int chipX = lineWidth + chipBoarder + x + (chipSize + chipBoarder) * (chipCounter % 10);
-                int chipY = lineWidth + chipBoarder + y + (chipSize + chipBoarder) * (chipCounter / 10);
-                DrawRectangle(chipX, chipY, chipSize, chipSize, chipColors[chip->type]);
-
-                int connectorSize = 6;
-                Rectangle connectorRec = {
-                    chipX - chipBoarder / 2,
-                    chipY + chipSize / 2,
-                    (connectorSize - chipBoarder) / 2,
-                    connectorSize,
-                };
-                if (_chip != chip->value - 1)
-                {
-                    DrawRectanglePro(connectorRec, (Vector2){-(chipSize - 1), connectorSize / 2}, 0, BLACK);
-                }
-                if (_chip != 0)
-                {
-                    DrawRectanglePro(connectorRec, (Vector2){-1, connectorSize / 2}, 0, BLACK);
-                }
-                chipCounter++;
-            }
+            DrawChip(chip, x, y, &chipCounter);
         }
     }
 }
@@ -289,90 +277,5 @@ void DrawChip(Chip *chip, int x, int y, int *chipCounter)
             DrawRectanglePro(connectorRec, (Vector2){-1, connectorSize / 2}, 0, BLACK);
         }
         (*chipCounter)++;
-    }
-}
-void UpdateBoard(GameState *state)
-{
-
-}
-void DrawShop(void)
-{
-    ClearBackground(DARKGRAY);
-    Vector2 mousePos = GetMousePosition();
-
-    bool clicked = IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
-    bool rclicked = IsMouseButtonReleased(MOUSE_BUTTON_RIGHT);
-    if (rclicked)
-    {
-        currentShopper++;
-        if (boards[currentShopper].state == INACTIVE)
-        {
-            ResetBoards();
-            // state = BOARD;
-            return;
-        }
-    }
-    int i = currentShopper;
-    Board *b = &boards[i];
-    Bag *bag = &bags[i];
-
-    int x = gutter + (gutter + boardSize) * (i % 3);
-    int y = gutter + (gutter + boardSize) * (i / 3);
-
-    Color c = b->state == INACTIVE ? GRAY : YELLOW;
-
-    DrawRectangleLinesEx((Rectangle){x, y, boardRectSize, boardRectSize}, lineWidth, c);
-    int chipCounter = 0;
-    for (size_t chip_i = 0; chip_i < bag->nChips; chip_i++)
-    {
-        Chip *chip = &bag->chips[chip_i];
-        DrawChip(chip, x, y, &chipCounter);
-    }
-
-    SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-    // Shop
-    for (size_t chipType = 1; chipType < NCHIP_COLORS; chipType++)
-    {
-        Chip chip1 = {chipType, 1};
-        Chip chip2 = {chipType, 2};
-        Chip chip4 = {chipType, 4};
-        int y = 200 + chipType * 100;
-        int counter = 0;
-        DrawChip(&chip1, 500, y, &counter);
-        if (CheckCollisionPointRec(mousePos, (Rectangle){500, y, 30, 30}))
-        {
-            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-            DrawRectangle(490, y + 10, 8, 8, WHITE);
-            if (clicked && b->money >= chip1.value)
-            {
-                b->money -= chip1.value;
-                bag->chips[bag->nChips++] = chip1;
-                printf("nChips: %d\n", bag->nChips);
-            }
-        }
-        counter = 0;
-        DrawChip(&chip2, 500, y + 30, &counter);
-        if (CheckCollisionPointRec(mousePos, (Rectangle){500, y + 30, 30 * 2, 30}))
-        {
-            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-            DrawRectangle(490, y + 40, 8, 8, WHITE);
-            if (clicked && b->money >= chip2.value)
-            {
-                b->money -= chip2.value;
-                bag->chips[bag->nChips++] = chip2;
-            }
-        }
-        counter = 0;
-        DrawChip(&chip4, 500, y + 60, &counter);
-        if (CheckCollisionPointRec(mousePos, (Rectangle){500, y + 60, 30 * 4, 30}))
-        {
-            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-            DrawRectangle(490, y + 70, 8, 8, WHITE);
-            if (clicked && b->money >= chip4.value)
-            {
-                b->money -= chip4.value;
-                bag->chips[bag->nChips++] = chip4;
-            }
-        }
     }
 }

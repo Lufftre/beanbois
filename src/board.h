@@ -1,4 +1,7 @@
+#pragma once
+#include "raylib.h"
 #include "game.h"
+#include <stdbool.h>
 typedef enum BoardState
 {
     INACTIVE,
@@ -34,13 +37,28 @@ typedef struct Bag
     int nChips;
 } Bag;
 
+#define NCHIP_COLORS 4
+extern const Color chipColors[NCHIP_COLORS];
+
+extern const int chipSize;
+extern const int chipBoarder;
+extern const int chipsPerRow;
+extern const int boardSize;
+extern const int gutter;
+extern const int lineWidth;
+extern const int boardRectSize;
+
 #define NBOARDS 9
 extern Bag bags[NBOARDS];
+extern Board boards[NBOARDS];
 
 void DrawBoard(void);
 void UpdateBoard(GameState* state);
-void DrawShop(void);
+void ResetBoards(void);
+
+void DrawChip(Chip *chip, int x, int y, int *chipCounter);
 void InitBag(Bag *bag);
 void InitBags(void);
-int AddPlayer(void);
 void ShuffleBag(Bag *bag);
+
+int AddPlayer(void);
