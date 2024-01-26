@@ -15,6 +15,7 @@ typedef struct Chip
 {
     int type;
     int value;
+    int idx;
 } Chip;
 
 typedef struct Board
@@ -32,12 +33,13 @@ typedef struct Board
 typedef struct Bag
 {
     Chip chips[256];
+    Chip *drawChips[256];
     int draws[256];
-    int drawCounter;
+    int chipsLeft;
     int nChips;
 } Bag;
 
-#define NCHIP_COLORS 4
+#define NCHIP_COLORS 8
 extern const Color chipColors[NCHIP_COLORS];
 
 extern const int chipSize;
@@ -59,6 +61,6 @@ void ResetBoards(void);
 void DrawChip(Chip *chip, int x, int y, int *chipCounter);
 void InitBag(Bag *bag);
 void InitBags(void);
-void ShuffleBag(Bag *bag);
+void ResetDrawBag(Bag *bag);
 
 int AddPlayer(void);

@@ -23,7 +23,7 @@ int main(void)
     AddPlayer();
     InitBags();
 
-    emscripten_set_main_loop(UpdateScreen, 60, 1);
+    emscripten_set_main_loop(UpdateScreen, 0, 1);
     CloseWindow();
     return 0;
 }

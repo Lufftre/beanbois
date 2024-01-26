@@ -19,25 +19,25 @@ Bag bags[NBOARDS];
 
 const Color chipColors[NCHIP_COLORS] = {
     WHITE,
-    // ORANGE,
-    // GREEN,
+    ORANGE,
+    GREEN,
     RED,
     BLUE,
-    // BLACK,
+    BLACK,
     YELLOW,
-    // PINK,
+    PINK,
 };
 
 typedef enum EChip
 {
     EWHITE,
-    // ORANGE,
-    // GREEN,
+    EORANGE,
+    EGREEN,
     ERED,
     EBLUE,
-    // BLACK,
+    EBLACK,
     EYELLOW,
-    // PINK,
+    EPINK,
 } EChip;
 
 const int chipSize = 20;
@@ -63,29 +63,30 @@ void shuffle(int *array, size_t n)
     }
 }
 
-void ShuffleBag(Bag *bag)
+void ResetDrawBag(Bag *bag)
 {
     for (size_t i = 0; i < bag->nChips; i++)
     {
-        bag->draws[i] = i;
+        // bag->draws[i] = i;
+        bag->drawChips[i] = &bag->chips[i];
     }
-    shuffle(bag->draws, bag->nChips);
+    // shuffle(bag->draws, bag->nChips);
 }
 
 void InitBag(Bag *bag)
 {
-    bag->chips[0] = (Chip){EWHITE, 1};
-    bag->chips[1] = (Chip){EWHITE, 1};
-    bag->chips[2] = (Chip){EWHITE, 1};
-    bag->chips[3] = (Chip){EWHITE, 1};
-    bag->chips[4] = (Chip){EWHITE, 2};
-    bag->chips[5] = (Chip){EWHITE, 2};
-    bag->chips[6] = (Chip){EWHITE, 3};
-    bag->chips[7] = (Chip){ERED, 1};
-    bag->chips[8] = (Chip){EBLUE, 1};
+    bag->chips[0] = (Chip){EWHITE, 1, 0};
+    bag->chips[1] = (Chip){EWHITE, 1, 1};
+    bag->chips[2] = (Chip){EWHITE, 1, 2};
+    bag->chips[3] = (Chip){EWHITE, 1, 3};
+    bag->chips[4] = (Chip){EWHITE, 2, 4};
+    bag->chips[5] = (Chip){EWHITE, 2, 5};
+    bag->chips[6] = (Chip){EWHITE, 3, 6};
+    bag->chips[7] = (Chip){ERED,   1, 7};
+    bag->chips[8] = (Chip){EBLUE,  1, 8};
     bag->nChips = 9;
 
-    ShuffleBag(bag);
+    ResetDrawBag(bag);
 }
 
 void InitBags(void)
@@ -102,8 +103,8 @@ void ResetBoard(Board *b, Bag *bag)
     b->nChips = 0;
     b->whites = 0;
     b->state = ACTIVE;
-    bag->drawCounter = 0;
-    ShuffleBag(bag);
+    bag->chipsLeft = bag->nChips;
+    ResetDrawBag(bag);
 }
 
 void ResetBoards()
@@ -132,30 +133,82 @@ int AddPlayer(void)
     return -1;
 }
 
+void ChooseFrom(int n)
+{
+
+}
+
+int CountPot(EChip type)
+{
+
+}
+
 void AddChip(Board *b, Bag *bag)
 {
     if (b->state == EXPLODED)
         return;
 
-    if (bag->drawCounter == bag->nChips)
+    if (bag->chipsLeft == 0)
     {
         printf("out of chips\n");
         return;
     }
-    int i = bag->draws[bag->drawCounter++];
-    Chip chip = bag->chips[i];
+    // int i = bag->draws[bag->chipsLeft++];
+    // Chip chip = bag->chips[i];
+    int i = rand() % bag->chipsLeft;
+    Chip chip = *bag->drawChips[i];
+    bag->drawChips[i] = bag->drawChips[bag->chipsLeft - 1];
+    bag->chipsLeft--;
 
     b->chips[b->nChips++] = chip;
-    if (chip.type == 0)
-    {
-        b->whites += chip.value;
-    }
-    printf("Chip: %d %d %d\n", chip.type, chip.value, b->whites);
 
-    if (b->whites > 7)
+    Chip *prev = &b->chips[b->nChips - 2];
+    Chip *cur = &b->chips[b->nChips - 1];
+    int nCount;
+    switch (chip.type)
     {
-        b->state = EXPLODED;
+    case EWHITE:
+        b->whites += chip.value;
+        if (b->whites > 7)
+        {
+            b->state = EXPLODED;
+        }
+        break;
+    case ERED:
+        nCount = CountPot(EORANGE);
+        if(nCount >= 3)
+        {
+            chip.value += 2;
+        }
+        else if(nCount >= 1)
+        {
+            chip.value += 1;
+        }
+        break;
+    case EBLUE:
+        ChooseFrom(chip.value);
+        break;
+    case EYELLOW:
+
+        if(prev->type == EWHITE)
+        {
+            // Put back and reshuffle
+            b->whites -= prev->value;
+            cur->value += prev->value;
+            *prev = *cur;
+            b->nChips--;
+        }
+        break;
+    default:
+        break;
     }
+
+}
+
+void PutInBag(Bag *bag, Chip *chip)
+{
+    bag->drawChips[bag->chipsLeft] = chip;
+    bag->chipsLeft++;
 }
 
 void LockBoard(Board *b)
