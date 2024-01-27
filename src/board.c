@@ -16,7 +16,8 @@ Board boards[NBOARDS] = {
     {8},
 };
 Bag bags[NBOARDS];
-
+Chip selectionChips[16];
+int nSelections = 0;
 const Color chipColors[NCHIP_COLORS] = {
     WHITE,
     ORANGE,
@@ -82,8 +83,8 @@ void InitBag(Bag *bag)
     bag->chips[4] = (Chip){EWHITE, 2, 4};
     bag->chips[5] = (Chip){EWHITE, 2, 5};
     bag->chips[6] = (Chip){EWHITE, 3, 6};
-    bag->chips[7] = (Chip){ERED,   1, 7};
-    bag->chips[8] = (Chip){EBLUE,  1, 8};
+    bag->chips[7] = (Chip){ERED, 1, 7};
+    bag->chips[8] = (Chip){EBLUE, 1, 8};
     bag->nChips = 9;
     bag->chipsLeft = 9;
 
@@ -133,15 +134,38 @@ int AddPlayer(void)
     }
     return -1;
 }
-
-void ChooseFrom(int n)
+Chip TakeChip(Bag *bag)
 {
-
+    int i = rand() % bag->chipsLeft;
+    Chip chip = *bag->drawChips[i];
+    bag->drawChips[i] = bag->drawChips[bag->chipsLeft - 1];
+    bag->chipsLeft--;
+    return chip;
+}
+void ReturnChip(Bag *bag, Chip chip)
+{
+    Chip *c = &bag->chips[chip.idx];
+    bag->drawChips[bag->chipsLeft++] = c;
+}
+void ChooseFrom(Bag *bag, int n)
+{
+    nSelections = n;
+    for (size_t i = 0; i < n; i++)
+    {
+        selectionChips[i] = TakeChip(bag);
+    }
 }
 
-int CountPot(EChip type)
+int CountPot(Board *b, EChip type)
 {
-
+    int count = 0;
+    for (size_t i = 0; i < b->nChips; i++)
+    {
+        if (b->chips[i].type == type)
+            count++;
+    }
+    printf("count %d: %d", type, count);
+    return count;
 }
 
 void AddChip(Board *b, Bag *bag)
@@ -154,14 +178,9 @@ void AddChip(Board *b, Bag *bag)
         printf("out of chips\n");
         return;
     }
+    Chip chip = TakeChip(bag);
     // int i = bag->draws[bag->chipsLeft++];
     // Chip chip = bag->chips[i];
-    int i = rand() % bag->chipsLeft;
-    Chip chip = *bag->drawChips[i];
-    bag->drawChips[i] = bag->drawChips[bag->chipsLeft - 1];
-    bag->chipsLeft--;
-
-    b->chips[b->nChips++] = chip;
 
     Chip *prev = &b->chips[b->nChips - 2];
     Chip *cur = &b->chips[b->nChips - 1];
@@ -175,23 +194,27 @@ void AddChip(Board *b, Bag *bag)
             b->state = EXPLODED;
         }
         break;
+
     case ERED:
-        nCount = CountPot(EORANGE);
-        if(nCount >= 3)
+        nCount = CountPot(b, EORANGE);
+        if (nCount >= 3)
         {
             chip.value += 2;
         }
-        else if(nCount >= 1)
+        else if (nCount >= 1)
         {
             chip.value += 1;
         }
         break;
+
     case EBLUE:
-        ChooseFrom(chip.value);
+        b->state = CHOOSING;
+        ChooseFrom(bag, chip.value);
         break;
+
     case EYELLOW:
 
-        if(prev->type == EWHITE)
+        if (prev->type == EWHITE)
         {
             // Put back and reshuffle
             b->whites -= prev->value;
@@ -200,10 +223,12 @@ void AddChip(Board *b, Bag *bag)
             b->nChips--;
         }
         break;
+
     default:
         break;
     }
 
+    b->chips[b->nChips++] = chip;
 }
 
 void PutInBag(Bag *bag, Chip *chip)
@@ -240,34 +265,43 @@ void UpdateBoard(GameState *state)
     for (size_t i = 0; i < NBOARDS; i++)
     {
         Board *b = &boards[i];
-        if (b->state != ACTIVE)
-            continue;
-
         int x = gutter + (gutter + boardSize) * (i % 3);
         int y = gutter + (gutter + boardSize) * (i / 3);
-        b->isHovered = !(mousePos.x < x || mousePos.x > x + boardSize || mousePos.y < y || mousePos.y > y + boardSize);
-
-        if (!b->isHovered)
-            continue;
-
-        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+        if (b->state == ACTIVE)
         {
-            AddChip(b, &bags[i]);
-        }
-        else if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
-        {
-            LockBoard(b);
-            if (RoundIsDone())
+            b->isHovered = !(mousePos.x < x || mousePos.x > x + boardSize || mousePos.y < y || mousePos.y > y + boardSize);
+
+            if (!b->isHovered)
+                continue;
+
+            if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
-                *state = SHOP;
+                AddChip(b, &bags[i]);
+            }
+            else if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+            {
+                LockBoard(b);
+                if (RoundIsDone())
+                {
+                    *state = SHOP;
+                }
             }
         }
+        // else if (b->state == CHOOSING)
+        // {
+        //     for (size_t selIndex = 0; selIndex < nSelections; selIndex++)
+        //     {
+
+        //     }
+        // }
     }
 }
 
 void DrawBoard(void)
 {
     ClearBackground(BLACK);
+    bool clicked = IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+    Vector2 mousePos = GetMousePosition();
 
     for (size_t i = 0; i < NBOARDS; i++)
     {
@@ -298,10 +332,41 @@ void DrawBoard(void)
         DrawRectangleLinesEx((Rectangle){x, y, boardRectSize, boardRectSize}, lineWidth, c);
 
         int chipCounter = 0;
-        for (size_t chip_i = 0; chip_i < b->nChips; chip_i++)
+        if (b->state == CHOOSING)
         {
-            Chip *chip = &b->chips[chip_i];
-            DrawChip(chip, x, y, &chipCounter);
+            chipCounter += 12;
+            for (size_t selIndex = 0; selIndex < nSelections; selIndex++)
+            {
+                if (CheckCollisionPointRec(mousePos, (Rectangle){x, 30 + y + 20 * selIndex, 100, 20}))
+                {
+                    SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+                    DrawRectangle(x - 10, 30 + y + 20 * selIndex, 8, 8, WHITE);
+                    if (clicked)
+                    {
+                        b->chips[b->nChips++] = selectionChips[selIndex];
+                        for (size_t ci = 0; ci < nSelections; ci++)
+                        {
+                            if (ci == selIndex)
+                                continue;
+                            ReturnChip(&bags[i], selectionChips[ci]);
+                        }
+
+                        nSelections = 0;
+                        b->state = ACTIVE;
+                        break;
+                    }
+                }
+                DrawChip(&selectionChips[i], x, y, &chipCounter);
+                chipCounter += 10 - selectionChips[i].value;
+            }
+        }
+        else
+        {
+            for (size_t chip_i = 0; chip_i < b->nChips; chip_i++)
+            {
+                Chip *chip = &b->chips[chip_i];
+                DrawChip(chip, x, y, &chipCounter);
+            }
         }
     }
 }

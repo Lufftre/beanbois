@@ -8,6 +8,7 @@ typedef enum BoardState
     ACTIVE,
     LOCKED,
     EXPLODED,
+    CHOOSING,
 
 } BoardState;
 
@@ -55,7 +56,7 @@ extern Bag bags[NBOARDS];
 extern Board boards[NBOARDS];
 
 void DrawBoard(void);
-void UpdateBoard(GameState* state);
+void UpdateBoard(GameState *state);
 void ResetBoards(void);
 
 void DrawChip(Chip *chip, int x, int y, int *chipCounter);
