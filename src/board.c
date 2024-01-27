@@ -85,6 +85,7 @@ void InitBag(Bag *bag)
     bag->chips[7] = (Chip){ERED,   1, 7};
     bag->chips[8] = (Chip){EBLUE,  1, 8};
     bag->nChips = 9;
+    bag->chipsLeft = 9;
 
     ResetDrawBag(bag);
 }
