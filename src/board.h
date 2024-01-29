@@ -24,7 +24,7 @@ typedef struct Board
     int index;
     bool isHovered;
     BoardState state;
-    Chip chips[256];
+    Chip *chips[256];
     int nChips;
     int whites;
     int money;
@@ -35,7 +35,6 @@ typedef struct Bag
 {
     Chip chips[256];
     Chip *drawChips[256];
-    int draws[256];
     int chipsLeft;
     int nChips;
 } Bag;

@@ -16,7 +16,7 @@ Board boards[NBOARDS] = {
     {8},
 };
 Bag bags[NBOARDS];
-Chip selectionChips[16];
+Chip *selectionChips[16];
 int nSelections = 0;
 const Color chipColors[NCHIP_COLORS] = {
     WHITE,
@@ -49,29 +49,12 @@ const int gutter = (1000 - boardSize * 3) / 4;
 const int lineWidth = 4;
 const int boardRectSize = boardSize + lineWidth * 2;
 
-void shuffle(int *array, size_t n)
-{
-    if (n > 1)
-    {
-        size_t i;
-        for (i = 0; i < n - 1; i++)
-        {
-            size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
-            int t = array[j];
-            array[j] = array[i];
-            array[i] = t;
-        }
-    }
-}
-
 void ResetDrawBag(Bag *bag)
 {
     for (size_t i = 0; i < bag->nChips; i++)
     {
-        // bag->draws[i] = i;
         bag->drawChips[i] = &bag->chips[i];
     }
-    // shuffle(bag->draws, bag->nChips);
 }
 
 void InitBag(Bag *bag)
@@ -134,19 +117,21 @@ int AddPlayer(void)
     }
     return -1;
 }
-Chip TakeChip(Bag *bag)
+
+Chip* TakeChip(Bag *bag)
 {
     int i = rand() % bag->chipsLeft;
-    Chip chip = *bag->drawChips[i];
+    Chip *chip = bag->drawChips[i];
     bag->drawChips[i] = bag->drawChips[bag->chipsLeft - 1];
     bag->chipsLeft--;
     return chip;
 }
-void ReturnChip(Bag *bag, Chip chip)
+
+void ReturnChip(Bag *bag, Chip *chip)
 {
-    Chip *c = &bag->chips[chip.idx];
-    bag->drawChips[bag->chipsLeft++] = c;
+    bag->drawChips[bag->chipsLeft++] = chip;
 }
+
 void ChooseFrom(Bag *bag, int n)
 {
     nSelections = n;
@@ -161,7 +146,7 @@ int CountPot(Board *b, EChip type)
     int count = 0;
     for (size_t i = 0; i < b->nChips; i++)
     {
-        if (b->chips[i].type == type)
+        if (b->chips[i]->type == type)
             count++;
     }
     printf("count %d: %d", type, count);
@@ -178,17 +163,15 @@ void AddChip(Board *b, Bag *bag)
         printf("out of chips\n");
         return;
     }
-    Chip chip = TakeChip(bag);
-    // int i = bag->draws[bag->chipsLeft++];
-    // Chip chip = bag->chips[i];
+    Chip *chip = TakeChip(bag);
 
-    Chip *prev = &b->chips[b->nChips - 2];
-    Chip *cur = &b->chips[b->nChips - 1];
+    Chip *prev = b->chips[b->nChips - 2];
+    Chip *cur = b->chips[b->nChips - 1];
     int nCount;
-    switch (chip.type)
+    switch (chip->type)
     {
     case EWHITE:
-        b->whites += chip.value;
+        b->whites += chip->value;
         if (b->whites > 7)
         {
             b->state = EXPLODED;
@@ -199,17 +182,17 @@ void AddChip(Board *b, Bag *bag)
         nCount = CountPot(b, EORANGE);
         if (nCount >= 3)
         {
-            chip.value += 2;
+            chip->value += 2;
         }
         else if (nCount >= 1)
         {
-            chip.value += 1;
+            chip->value += 1;
         }
         break;
 
     case EBLUE:
         b->state = CHOOSING;
-        ChooseFrom(bag, chip.value);
+        ChooseFrom(bag, chip->value);
         break;
 
     case EYELLOW:
@@ -242,7 +225,7 @@ void LockBoard(Board *b)
     b->state = LOCKED;
     for (size_t i = 0; i < b->nChips; i++)
     {
-        b->money += b->chips[i].value;
+        b->money += b->chips[i]->value;
     }
 }
 
@@ -356,15 +339,15 @@ void DrawBoard(void)
                         break;
                     }
                 }
-                DrawChip(&selectionChips[i], x, y, &chipCounter);
-                chipCounter += 10 - selectionChips[i].value;
+                DrawChip(selectionChips[i], x, y, &chipCounter);
+                chipCounter += 10 - selectionChips[i]->value;
             }
         }
         else
         {
             for (size_t chip_i = 0; chip_i < b->nChips; chip_i++)
             {
-                Chip *chip = &b->chips[chip_i];
+                Chip *chip = b->chips[chip_i];
                 DrawChip(chip, x, y, &chipCounter);
             }
         }
@@ -381,18 +364,18 @@ void DrawChip(Chip *chip, int x, int y, int *chipCounter)
 
         int connectorSize = 6;
         Rectangle connectorRec = {
-            chipX - chipBoarder / 2,
-            chipY + chipSize / 2,
-            (connectorSize - chipBoarder) / 2,
+            chipX - chipBoarder / 2.0,
+            chipY + chipSize / 2.0,
+            (connectorSize - chipBoarder) / 2.0,
             connectorSize,
         };
         if (_chip != chip->value - 1)
         {
-            DrawRectanglePro(connectorRec, (Vector2){-(chipSize - 1), connectorSize / 2}, 0, BLACK);
+            DrawRectanglePro(connectorRec, (Vector2){-(chipSize - 1), connectorSize / 2.0}, 0, BLACK);
         }
         if (_chip != 0)
         {
-            DrawRectanglePro(connectorRec, (Vector2){-1, connectorSize / 2}, 0, BLACK);
+            DrawRectanglePro(connectorRec, (Vector2){-1, connectorSize / 2.0}, 0, BLACK);
         }
         (*chipCounter)++;
     }

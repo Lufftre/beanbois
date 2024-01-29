@@ -1,0 +1,6 @@
+-std=c99
+-IC:/raylib/src
+-IC:/raylib/src/external
+-IC:/raylib/src/extras
+-isystem
+C:\emsdk\upstream\emscripten\cache\sysroot\include
